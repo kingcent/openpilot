@@ -2,7 +2,9 @@
 #include <string.h>
 #include <math.h>
 #include <map>
-#include "ui.hpp"
+
+#include "paint.hpp"
+#include "sidebar.hpp"
 
 static void ui_draw_sidebar_background(UIState *s) {
   int sbr_x = !s->scene.uilayout_sidebarcollapsed ? 0 : -(sbr_w) + bdr_s * 2;
@@ -122,7 +124,7 @@ static void ui_draw_sidebar_temp_metric(UIState *s) {
   char temp_value_str[32];
   char temp_value_unit[32];
   const int temp_y_offset = 0;
-  snprintf(temp_value_str, sizeof(temp_value_str), "%d", s->scene.thermal.getPa0());
+  snprintf(temp_value_str, sizeof(temp_value_str), "%.0f", s->scene.thermal.getAmbient());
   snprintf(temp_value_unit, sizeof(temp_value_unit), "%s", "°C");
   snprintf(temp_label_str, sizeof(temp_label_str), "%s", "TEMP");
   strcat(temp_value_str, temp_value_unit);
@@ -157,13 +159,13 @@ static void ui_draw_sidebar_panda_metric(UIState *s) {
 }
 
 static void ui_draw_sidebar_connectivity(UIState *s) {
-  if (s->scene.athenaStatus == NET_DISCONNECTED) {
-    ui_draw_sidebar_metric(s, NULL, NULL, 1, 180+158, "CONNECT\nOFFLINE");
-  } else if (s->scene.athenaStatus == NET_CONNECTED) {
-    ui_draw_sidebar_metric(s, NULL, NULL, 0, 180+158, "CONNECT\nONLINE");
-  } else {
-    ui_draw_sidebar_metric(s, NULL, NULL, 2, 180+158, "CONNECT\nERROR");
-  }
+  static std::map<NetStatus, std::pair<const char *, int>> connectivity_map = {
+    {NET_ERROR, {"CONNECT\nERROR", 2}},
+    {NET_CONNECTED, {"CONNECT\nONLINE", 0}},
+    {NET_DISCONNECTED, {"CONNECT\nOFFLINE", 1}},
+  };
+  auto net_params = connectivity_map[s->scene.athenaStatus];
+  ui_draw_sidebar_metric(s, NULL, NULL, net_params.second, 180+158, net_params.first);
 }
 
 void ui_draw_sidebar(UIState *s) {
